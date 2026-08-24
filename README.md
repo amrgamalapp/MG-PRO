@@ -35,14 +35,3 @@ UPDATE users SET role='admin' WHERE email='YOUR_EMAIL';
 `gunicorn app:app`
 
 > ملاحظة: SQLite مناسب للبداية والاختبار. للإطلاق الكبير استخدم PostgreSQL، وخزّن SECRET_KEY في متغيرات البيئة. الدفع الإلكتروني والفيديوهات الخاصة تحتاج مزود دفع/تخزين فيديو ومفاتيح حقيقية.
-
-
-## Vercel deployment
-
-This project is configured for Vercel + Flask:
-- `api/index.py` exposes the Flask WSGI app.
-- `vercel.json` rewrites all public routes to the Flask function.
-- `.python-version` pins Python 3.12.
-- On Vercel, SQLite is stored under `/tmp` because the serverless filesystem is not persistent.
-
-For production student accounts, enrollments, progress, and certificates, move the database to PostgreSQL (or another persistent database) before launch.

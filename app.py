@@ -6,15 +6,23 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from werkzeug.security import generate_password_hash, check_password_hash
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# Vercel's serverless filesystem is read-only except for /tmp.
-# Keep SQLite locally for development; on Vercel use /tmp so cold starts can initialize safely.
-if os.environ.get('VERCEL'):
-    DB_PATH = os.path.join('/tmp', 'mg_engineering_academy.db')
-else:
-    DB_PATH = os.path.join(BASE_DIR, 'instance', 'academy.db')
-app = Flask(__name__)
+DB_PATH = os.path.join('/tmp', 'mg_engineering_academy.db') if os.environ.get('VERCEL') else os.path.join(BASE_DIR, 'instance', 'academy.db')
+app = Flask(__name__, static_folder='public', static_url_path='/static')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-secret-key-in-production')
 app.config['DATABASE'] = DB_PATH
+
+_db_initialized = False
+
+@app.before_request
+def ensure_database():
+    global _db_initialized
+    if not _db_initialized:
+        init_db()
+        _db_initialized = True
+
+@app.route('/health')
+def health():
+    return {'ok': True, 'service': 'MG Engineering Academy'}
 
 
 def db():
@@ -280,5 +288,3 @@ def not_found(e): return render_template('error.html',code=404,message='الصف
 if __name__ == '__main__':
     init_db()
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT',5000)), debug=os.environ.get('FLASK_DEBUG','0')=='1')
-else:
-    init_db()
