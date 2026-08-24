@@ -6,7 +6,12 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from werkzeug.security import generate_password_hash, check_password_hash
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, 'instance', 'academy.db')
+# Vercel's serverless filesystem is read-only except for /tmp.
+# Keep SQLite locally for development; on Vercel use /tmp so cold starts can initialize safely.
+if os.environ.get('VERCEL'):
+    DB_PATH = os.path.join('/tmp', 'mg_engineering_academy.db')
+else:
+    DB_PATH = os.path.join(BASE_DIR, 'instance', 'academy.db')
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-secret-key-in-production')
 app.config['DATABASE'] = DB_PATH
