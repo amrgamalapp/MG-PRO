@@ -1,13 +1,20 @@
 # MG Engineering Academy — Vercel Ready
 
-This build uses Vercel's current zero-configuration Flask deployment model.
+This package is configured specifically for the new GitHub + Vercel project.
 
-- Keep `app.py` at the repository root.
-- Keep `requirements.txt` at the repository root.
-- Static assets are in `public/` for Vercel CDN delivery.
-- No `api/` wrapper and no rewrite rule are required.
-- Vercel should detect Flask automatically.
+## Vercel entrypoint
+- `api/index.py` — Flask WSGI application
+- `vercel.json` — explicit Python Function routing
+- `templates/` — Jinja templates
+- `public/` — CSS, JS and logo
+- `requirements.txt` — Flask dependencies
 
-Deploy by pushing the repository root to GitHub and importing the repository into Vercel.
+## Health check
+Open `/health` after deployment. It should return JSON with:
+`{"ok": true, ...}`
 
-Health check: `/health`
+## Important
+The app uses SQLite under `/tmp` when `VERCEL` is set, because Vercel's deployed filesystem is not a persistent writable database location. This is enough to get the new deployment running, but a persistent hosted database should be connected before using real student accounts, enrollments, or certificates in production.
+
+## Deployment
+Push the contents of this ZIP to the root of the NEW GitHub repository, then redeploy the NEW Vercel project. Do not move the old domain yet. Test the Vercel `.vercel.app` URL first.
