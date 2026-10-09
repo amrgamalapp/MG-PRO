@@ -14,6 +14,7 @@
     <!-- Firebase SDK (Compat Version) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
 
     <script>
         tailwind.config = {
@@ -49,8 +50,17 @@
             background: rgba(26, 41, 66, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
+
+        /* Toast notifications */
+        #toastContainer { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .toast { padding: 12px 20px; border-radius: 14px; font-size: 13px; font-weight: 700; color: white; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.5); animation: toastIn .35s cubic-bezier(.21,1.02,.73,1) forwards; max-width: 92vw; }
+        .toast.success { background: linear-gradient(135deg,#059669,#10B981); border: 1px solid rgba(52,211,153,.4); }
+        .toast.error { background: linear-gradient(135deg,#DC2626,#EF4444); border: 1px solid rgba(248,113,113,.4); }
+        .toast.info { background: linear-gradient(135deg,#B45309,#D97706); border: 1px solid rgba(217,119,6,.4); }
+        .toast.hide { animation: toastOut .3s ease forwards; }
+        @keyframes toastIn { from { opacity:0; transform: translateY(20px) scale(.95);} to { opacity:1; transform: translateY(0) scale(1);} }
+        @keyframes toastOut { from { opacity:1;} to { opacity:0; transform: translateY(15px);} }
     </style>
-<style id="mg-admin-premium">.glass-panel,.glass-card{box-shadow:0 12px 34px rgba(0,0,0,.14)}input,select,button{transition:all .2s ease}input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid #f59e0b;outline-offset:3px}table tbody tr:hover{background:rgba(245,158,11,.055)}</style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
 
@@ -70,7 +80,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1">كلمة المرور</label>
-                    <input type="password" id="password" required value="admin1234" class="w-full bg-navy-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 text-sm">
+                    <input type="password" id="password" required placeholder="••••••••" class="w-full bg-navy-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 text-sm">
                 </div>
                 <div id="loginError" class="hidden text-red-400 text-xs font-semibold py-1">
                     <i class="fa-solid fa-triangle-exclamation ml-1"></i> بيانات الدخول غير صحيحة
@@ -110,32 +120,58 @@
                 </div>
             </div>
 
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="glass-panel p-5 rounded-2xl flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center justify-center text-xl"><i class="fa-solid fa-users"></i></div>
+                    <div>
+                        <div id="statTotal" class="text-2xl font-black text-white">0</div>
+                        <div class="text-xs text-slate-400 font-semibold">إجمالي الطلاب المسجلين</div>
+                    </div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-xl"><i class="fa-solid fa-circle-check"></i></div>
+                    <div>
+                        <div id="statActive" class="text-2xl font-black text-white">0</div>
+                        <div class="text-xs text-slate-400 font-semibold">أرقام مفعّلة</div>
+                    </div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center text-xl"><i class="fa-solid fa-hourglass-half"></i></div>
+                    <div>
+                        <div id="statPending" class="text-2xl font-black text-white">0</div>
+                        <div class="text-xs text-slate-400 font-semibold">طلبات انتظار التفعيل</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Add Direct Student Form -->
             <div class="glass-panel p-6 rounded-2xl">
                 <h3 class="text-base font-bold text-white mb-4"><i class="fa-solid fa-user-plus text-amber-500 ml-2"></i>تفعيل رقم طالب يدوي فوري</h3>
-                <form onsubmit="addManualStudent(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <form onsubmit="addManualStudent(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <input type="text" id="manualName" placeholder="اسم الطالب" required class="bg-navy-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs">
+                    <input type="text" id="manualGov" placeholder="المحافظة (اختياري)" class="bg-navy-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs">
                     <input type="tel" id="manualPhone" placeholder="رقم الهاتف (010XXXXXXXX)" required class="bg-navy-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs">
-                    <button type="submit" id="addBtn" class="bg-amber-500 hover:bg-amber-600 text-navy-900 font-bold py-2 rounded-xl text-xs">
+                    <button type="submit" id="addBtn" class="bg-amber-500 hover:bg-amber-600 text-navy-900 font-bold py-2 rounded-xl text-xs transition">
                         تفعيل وإضافة الرقم فوراً
                     </button>
                 </form>
             </div>
 
-
-<section class="glass-panel p-6 rounded-2xl" id="designControl"><div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5"><div><h3 class="text-lg font-black text-white"><i class="fa-solid fa-wand-magic-sparkles text-amber-500 ml-2"></i>تخصيص شكل المنصة</h3><p class="text-slate-400 text-xs mt-1">تُحفظ الإعدادات على Firebase وتظهر لزوار الموقع.</p></div><span id="designSaveStatus" class="text-xs text-slate-400">جاهز للتعديل</span></div>
-<form id="designForm" onsubmit="saveDesignSettings(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"><label class="block text-xs text-slate-300">اللون الرئيسي<div class="flex items-center gap-3 mt-2 bg-navy-800 border border-slate-700 rounded-xl p-2"><input id="designAccent" type="color" value="#f59e0b" class="h-9 w-12 bg-transparent border-0 cursor-pointer"><span class="text-slate-400">لون التفاصيل والأزرار</span></div></label>
-<label class="block text-xs text-slate-300">استدارة الإطارات<div class="mt-2 flex items-center gap-3"><input id="designRadius" type="range" min="8" max="36" value="22" class="w-full accent-amber-500" oninput="document.getElementById('radiusValue').textContent=this.value+'px'"><span id="radiusValue" class="text-amber-400 w-12">22px</span></div></label>
-<label class="block text-xs text-slate-300">قوة الوهج<div class="mt-2 flex items-center gap-3"><input id="designGlow" type="range" min="0" max="55" value="22" class="w-full accent-amber-500" oninput="document.getElementById('glowValue').textContent=this.value+'%'"><span id="glowValue" class="text-amber-400 w-12">22%</span></div></label>
-<label class="block text-xs text-slate-300">خلفية الموقع<select id="designBackground" class="mt-2 w-full bg-navy-800 border border-slate-700 rounded-xl px-3 py-3 text-white"><option value="navy">كحلي فاخر</option><option value="midnight">أسود ليلي</option><option value="slate">رمادي داكن</option></select></label>
-<label class="block text-xs text-slate-300">نمط البطاقات<select id="designCardStyle" class="mt-2 w-full bg-navy-800 border border-slate-700 rounded-xl px-3 py-3 text-white"><option value="glass">زجاجي شفاف</option><option value="balanced">زجاجي متوازن</option><option value="solid">داكن مصمت</option></select></label>
-<div class="flex items-end"><button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-navy-900 font-black rounded-xl px-4 py-3"><i class="fa-solid fa-floppy-disk ml-2"></i>حفظ وتطبيق التصميم</button></div></form><div class="mt-5 p-4 rounded-xl border border-slate-700 bg-navy-900/60"><div class="text-xs text-slate-400 mb-3">معاينة تقريبية</div><div id="designPreview" class="rounded-2xl p-5 border border-amber-500/30 bg-navy-800"><div class="flex items-center gap-3"><div class="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-400"><i class="fa-solid fa-cubes text-xl"></i></div><div><div class="font-black text-white">MG PRO</div><div class="text-xs text-slate-400">تصميم احترافي للمكتب الفني</div></div></div></div></div></section>
-
             <!-- Students List Table -->
             <div class="glass-panel p-6 rounded-2xl">
-                <div class="flex justify-between items-center mb-6">
+                <div class="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center mb-6">
                     <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-users text-amber-500 ml-2"></i>قائمة الطلاب المسجلين</h3>
-                    <span id="connStatus" class="text-xs text-amber-400 font-semibold"><i class="fa-solid fa-spinner animate-spin"></i> جاري الاتصال بالـ Firebase...</span>
+                    <div class="flex items-center gap-3 w-full sm:w-auto">
+                        <div class="relative flex-1 sm:flex-none">
+                            <input id="studentsSearch" oninput="filterStudents()" type="text" placeholder="ابحث بالاسم أو الرقم أو المحافظة..." class="bg-navy-800/80 border border-slate-700/80 rounded-xl px-4 py-2 pr-9 text-xs text-white w-full sm:w-56 focus:outline-none focus:border-amber-500">
+                            <i class="fa-solid fa-magnifying-glass absolute right-3 top-2.5 text-slate-500 text-xs"></i>
+                        </div>
+                        <button onclick="exportStudentsCSV()" class="px-4 py-2 bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-600/30 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-file-csv"></i> تصدير CSV
+                        </button>
+                        <span id="connStatus" class="text-xs text-amber-400 font-semibold whitespace-nowrap"><i class="fa-solid fa-spinner animate-spin"></i> جاري الاتصال...</span>
+                    </div>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -143,7 +179,9 @@
                         <thead class="bg-navy-800 text-slate-400 text-xs uppercase border-b border-slate-700">
                             <tr>
                                 <th class="p-4">اسم الطالب</th>
+                                <th class="p-4">المحافظة</th>
                                 <th class="p-4">رقم الهاتف / الواتساب</th>
+                                <th class="p-4">تاريخ التسجيل</th>
                                 <th class="p-4">الحالة</th>
                                 <th class="p-4 text-center">الإجراء</th>
                             </tr>
@@ -161,127 +199,213 @@
         </footer>
     </div>
 
-    <!-- FIREBASE INITIALIZATION & LOGIC -->
+    <!-- ADMIN LOGIC -->
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyBO34EZgVpZquo1TWF52r47WujWZbqukFU",
-            authDomain: "mgpro-2f83b.firebaseapp.com",
-            databaseURL: "https://mohamedgamal11-default-rtdb.firebaseio.com",
-            projectId: "mgpro-2f83b",
-            storageBucket: "mgpro-2f83b.firebasestorage.app",
-            messagingSenderId: "964974315895",
-            appId: "1:964974315895:web:be64f714bab53dd6437972",
-            measurementId: "G-5H1EQDFBRS"
-        };
-
-        // Initialize Firebase
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+        // ---------- Toast Notifications ----------
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            const icon = type === 'success' ? 'fa-circle-check' : (type === 'error' ? 'fa-circle-xmark' : 'fa-circle-info');
+            toast.innerHTML = '<i class="fa-solid ' + icon + '"></i><span>' + message + '</span>';
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.add('hide'); setTimeout(() => toast.remove(), 350); }, 4000);
         }
-        const db = firebase.database();
-        function currentDesignForm(){return{accent:document.getElementById('designAccent').value,radius:Number(document.getElementById('designRadius').value),glow:Number(document.getElementById('designGlow').value)/100,background:document.getElementById('designBackground').value,cardStyle:document.getElementById('designCardStyle').value}}
-        function previewDesign(){const d=currentDesignForm(),p=document.getElementById('designPreview');if(!p)return;p.style.borderColor=d.accent;p.style.borderRadius=d.radius+'px';p.style.boxShadow='0 12px 30px '+d.accent+Math.round(d.glow*255).toString(16).padStart(2,'0')}
-        async function saveDesignSettings(e){e.preventDefault();const status=document.getElementById('designSaveStatus'),btn=document.querySelector('#designForm button[type="submit"]');status.textContent='جاري الحفظ...';btn.disabled=true;try{await db.ref('siteSettings/design').set({...currentDesignForm(),updatedAt:new Date().toISOString()});status.textContent='تم الحفظ بنجاح ✓'}catch(err){status.textContent='تعذر الحفظ — راجع صلاحيات Firebase';console.error(err)}finally{btn.disabled=false}}
-        function loadDesignSettings(){db.ref('siteSettings/design').once('value').then(snap=>{const d=snap.val();if(!d)return;if(d.accent)document.getElementById('designAccent').value=d.accent;if(d.radius)document.getElementById('designRadius').value=d.radius;if(d.glow!=null)document.getElementById('designGlow').value=Math.round(d.glow*100);if(d.background)document.getElementById('designBackground').value=d.background;if(d.cardStyle)document.getElementById('designCardStyle').value=d.cardStyle;document.getElementById('radiusValue').textContent=document.getElementById('designRadius').value+'px';document.getElementById('glowValue').textContent=document.getElementById('designGlow').value+'%';previewDesign()}).catch(err=>console.warn(err))}
-        ['designAccent','designRadius','designGlow','designBackground','designCardStyle'].forEach(id=>document.addEventListener('input',ev=>{if(ev.target&&ev.target.id===id)previewDesign()}));
 
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+        }
 
+        // ---------- Session ----------
         function handleLogin(e) {
             e.preventDefault();
-            const user = document.getElementById('username').value;
+            const user = document.getElementById('username').value.trim();
             const pass = document.getElementById('password').value;
 
             if (user === 'eng_mohamed' && pass === 'admin1234') {
-                document.getElementById('loginSection').classList.add('hidden');
-                document.getElementById('adminMain').classList.remove('hidden');
-                loadDesignSettings();
-                loadRealtimeStudents();
+                sessionStorage.setItem('mgpro_admin', '1');
+                showDashboard();
             } else {
                 document.getElementById('loginError').classList.remove('hidden');
             }
         }
 
-        function handleLogout() {
-            location.reload();
+        function showDashboard() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('adminMain').classList.remove('hidden');
+            loadRealtimeStudents();
         }
 
+        function handleLogout() {
+            sessionStorage.removeItem('mgpro_admin');
+            document.getElementById('adminMain').classList.add('hidden');
+            document.getElementById('loginSection').classList.remove('hidden');
+        }
+
+        // ---------- Students Data ----------
+        let allStudents = [];
+
         function loadRealtimeStudents() {
-            const statusLabel = document.getElementById('connStatus');
-            
             db.ref('students').on('value', (snapshot) => {
-                statusLabel.innerHTML = '<i class="fa-solid fa-circle text-green-400 text-[8px] animate-pulse"></i> متصل بـ Firebase';
-                const tbody = document.getElementById('studentsTableBody');
-                tbody.innerHTML = '';
-                const data = snapshot.val();
-
-                if (!data) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">لا يوجد طلاب مسجلين. يمكنك إضافة أول طالب بالأعلى.</td></tr>';
-                    return;
-                }
-
-                Object.keys(data).forEach((phoneKey) => {
-                    const student = data[phoneKey];
-                    const isActive = student.status === 'active';
-
-                    tbody.innerHTML += `
-                        <tr class="hover:bg-navy-800/50">
-                            <td class="p-4 font-bold text-white">${student.name || 'طالب بدون اسم'}</td>
-                            <td class="p-4 text-amber-400 font-bold" dir="ltr">${student.phone}</td>
-                            <td class="p-4">
-                                <span class="px-2.5 py-1 rounded-full text-xs font-bold ${isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}">
-                                    ${isActive ? 'مُفعل' : 'معلق'}
-                                </span>
-                            </td>
-                            <td class="p-4 text-center">
-                                ${isActive ? `
-                                    <button onclick="toggleStudentStatus('${student.phone}', 'pending')" class="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-xs font-bold hover:bg-red-500/30">
-                                        إلغاء التفعيل
-                                    </button>
-                                ` : `
-                                    <button onclick="toggleStudentStatus('${student.phone}', 'active')" class="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold hover:bg-emerald-500/30">
-                                        قبول وتفعيل
-                                    </button>
-                                `}
-                            </td>
-                        </tr>
-                    `;
-                });
+                const data = snapshot.val() || {};
+                allStudents = Object.keys(data).map(key => Object.assign({ phone: key }, data[key]));
+                // الأحدث أولاً
+                allStudents.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+                updateStats();
+                renderTable();
             }, (error) => {
                 console.error(error);
-                statusLabel.innerHTML = '<span class="text-red-400"><i class="fa-solid fa-triangle-exclamation"></i> خطأ في الاتصال بالـ Realtime Database</span>';
+                document.getElementById('connStatus').innerHTML = '<span class="text-red-400"><i class="fa-solid fa-triangle-exclamation"></i> خطأ في الاتصال</span>';
             });
         }
 
+        function updateStats() {
+            const total = allStudents.length;
+            const active = allStudents.filter(s => s.status === 'active').length;
+            const pending = total - active;
+            document.getElementById('statTotal').innerText = total;
+            document.getElementById('statActive').innerText = active;
+            document.getElementById('statPending').innerText = pending;
+        }
+
+        function renderTable() {
+            const q = (document.getElementById('studentsSearch').value || '').trim();
+            const tbody = document.getElementById('studentsTableBody');
+            const filtered = allStudents.filter(s =>
+                !q ||
+                (s.name || '').includes(q) ||
+                (s.phone || '').includes(q) ||
+                (s.governorate || '').includes(q)
+            );
+
+            if (!filtered.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-500">لا يوجد طلاب مطابقين للبحث.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(s => {
+                const isActive = s.status === 'active';
+                const date = s.createdAt ? new Date(s.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+                return `
+                <tr class="hover:bg-navy-800/50">
+                    <td class="p-4 font-bold text-white">${escapeHtml(s.name || 'طالب بدون اسم')}</td>
+                    <td class="p-4 text-slate-400">${escapeHtml(s.governorate || '—')}</td>
+                    <td class="p-4 text-amber-400 font-bold" dir="ltr">${escapeHtml(s.phone || '')}</td>
+                    <td class="p-4 text-slate-400 text-xs">${date}</td>
+                    <td class="p-4">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold ${isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}">
+                            ${isActive ? 'مُفعل' : 'معلق'}
+                        </span>
+                    </td>
+                    <td class="p-4">
+                        <div class="flex items-center justify-center gap-2">
+                            ${isActive ? `
+                                <button onclick="toggleStudentStatus('${s.phone}', 'pending')" class="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-xs font-bold hover:bg-red-500/30 transition">إلغاء التفعيل</button>
+                            ` : `
+                                <button onclick="toggleStudentStatus('${s.phone}', 'active')" class="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold hover:bg-emerald-500/30 transition">قبول وتفعيل</button>
+                            `}
+                            <button onclick="deleteStudent('${s.phone}')" title="حذف الطالب" class="p-1.5 bg-slate-700/40 text-slate-400 border border-slate-600/50 rounded-lg hover:bg-red-500/20 hover:text-red-400 transition">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function filterStudents() { renderTable(); }
+
         function toggleStudentStatus(phone, newStatus) {
             db.ref('students/' + phone).update({ status: newStatus }).then(() => {
-                alert(newStatus === 'active' ? 'تم تفعيل حساب الطالب بنجاح!' : 'تم تغيير حالة الطالب إلى معلق.');
-            }).catch(err => alert('خطأ أثناء التعديل: ' + err.message));
+                showToast(newStatus === 'active' ? 'تم تفعيل حساب الطالب بنجاح!' : 'تم تغيير حالة الطالب إلى معلق.', newStatus === 'active' ? 'success' : 'info');
+            }).catch(err => showToast('خطأ أثناء التعديل: ' + err.message, 'error'));
+        }
+
+        function deleteStudent(phone) {
+            if (!confirm('هل أنت متأكد من حذف هذا الطالب نهائياً من قاعدة البيانات؟')) return;
+            db.ref('students/' + phone).remove().then(() => {
+                showToast('تم حذف الطالب بنجاح', 'success');
+            }).catch(err => showToast('خطأ أثناء الحذف: ' + err.message, 'error'));
         }
 
         function addManualStudent(e) {
             e.preventDefault();
             const name = document.getElementById('manualName').value.trim();
-            const phone = document.getElementById('manualPhone').value.trim();
-            const addBtn = document.getElementById('addBtn');
+            const governorate = document.getElementById('manualGov').value.trim();
+            let phone = document.getElementById('manualPhone').value.trim();
+            phone = phone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+            if (phone.startsWith('+20')) phone = '0' + phone.substring(3);
+            else if (phone.startsWith('20')) phone = '0' + phone.substring(2);
 
-            addBtn.innerText = 'جاري الإضافة...';
+            if (!/^01[0125][0-9]{8}$/.test(phone)) {
+                showToast('رقم الهاتف غير صحيح - أدخل رقم مصري من 11 خانة', 'error');
+                return;
+            }
+
+            const addBtn = document.getElementById('addBtn');
+            addBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> جاري الإضافة...';
 
             db.ref('students/' + phone).set({
                 phone: phone,
                 name: name,
+                governorate: governorate || 'غير محددة',
                 status: 'active',
                 createdAt: new Date().toISOString()
             }).then(() => {
-                alert('تم إضافة وتفعيل الطالب بنجاح!');
+                showToast('تم إضافة وتفعيل الطالب بنجاح!', 'success');
                 document.getElementById('manualName').value = '';
+                document.getElementById('manualGov').value = '';
                 document.getElementById('manualPhone').value = '';
                 addBtn.innerText = 'تفعيل وإضافة الرقم فوراً';
             }).catch((err) => {
-                console.error(err);
-                alert('فشل الإضافة: ' + err.message);
+                showToast('فشل الإضافة: ' + err.message, 'error');
                 addBtn.innerText = 'تفعيل وإضافة الرقم فوراً';
             });
         }
+
+        function exportStudentsCSV() {
+            if (!allStudents.length) { showToast('لا يوجد طلاب للتصدير', 'info'); return; }
+            const rows = [['الاسم', 'المحافظة', 'الهاتف', 'الحالة', 'تاريخ التسجيل']];
+            allStudents.forEach(s => rows.push([
+                s.name || '',
+                s.governorate || '',
+                s.phone || '',
+                s.status === 'active' ? 'مفعل' : 'معلق',
+                s.createdAt ? new Date(s.createdAt).toLocaleDateString('ar-EG') : ''
+            ]));
+            const csv = '\ufeff' + rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'قائمة_الطلاب.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('تم تصدير قائمة الطلاب بنجاح', 'success');
+        }
+
+        // ---------- Init ----------
+        window.addEventListener('DOMContentLoaded', () => {
+            // مؤشر حالة الاتصال بقاعدة البيانات
+            db.ref('.info/connected').on('value', (snap) => {
+                const label = document.getElementById('connStatus');
+                if (snap.val() === true) {
+                    label.innerHTML = '<i class="fa-solid fa-circle text-green-400 text-[8px] animate-pulse"></i> متصل بـ Firebase';
+                } else {
+                    label.innerHTML = '<span class="text-amber-400"><i class="fa-solid fa-wifi"></i> جاري إعادة الاتصال...</span>';
+                }
+            });
+
+            // استعادة جلسة لوحة التحكم عند تحديث الصفحة
+            if (sessionStorage.getItem('mgpro_admin') === '1') {
+                showDashboard();
+            }
+        });
     </script>
+
+    <!-- Toast Notifications Container -->
+    <div id="toastContainer"></div>
 </body>
 </html>
