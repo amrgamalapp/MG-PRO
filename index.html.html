@@ -180,6 +180,8 @@
                     <span>تصفح المنصة كزائر بدون تسجيل</span>
                 </button>
             </div>
+
+            <p id="firebaseStatus" class="text-[10px] text-slate-500 mt-3 leading-relaxed"><i class="fa-solid fa-circle text-slate-600 text-[6px] animate-pulse ml-1"></i> جاري فحص الاتصال بقاعدة البيانات...</p>
         </div>
     </div>
 
@@ -667,6 +669,37 @@
         let isSubscriber = false;
         let currentVideoIndex = 0;
 
+        // ---------- Firebase Error Diagnostics ----------
+        function firebaseErrorHint(error) {
+            const code = String((error && error.code) || (error && error.message) || '');
+            if (code.includes('permission') || code.includes('PERMISSION_DENIED') || code.includes('unauthorized')) {
+                return 'إذن مرفوض من Firebase Rules - عدّل قواعد قاعدة البيانات لتسمح بالقراءة والكتابة (الخطوات بالتفصيل في README.md)';
+            }
+            if (code.includes('network') || code.includes('unavailable') || code.includes('timeout')) {
+                return 'مشكلة في الاتصال بالإنترنت أو سيرفر Firebase - تأكد من الاتصال وحاول تاني';
+            }
+            if (code.includes('apiKey') || code.includes('API key') || code.includes('api key')) {
+                return 'مفتاح Firebase API غير صالح أو مقيد - راجع إعدادات المشروع في Firebase Console';
+            }
+            return (error && error.message) || 'خطأ غير معروف';
+        }
+
+        function checkFirebaseHealth() {
+            const statusEl = document.getElementById('firebaseStatus');
+            if (!statusEl) return;
+            db.ref('.info/connected').on('value', (snap) => {
+                if (snap.val() === true) {
+                    db.ref('students').limitToFirst(1).once('value', () => {
+                        statusEl.innerHTML = '<i class="fa-solid fa-circle text-green-400 text-[6px] ml-1"></i> الاتصال بقاعدة البيانات سليم - يمكنك التسجيل والدخول';
+                    }, (err) => {
+                        statusEl.innerHTML = '<span class="text-red-400 font-semibold">⚠️ ' + firebaseErrorHint(err) + '</span>';
+                    });
+                } else {
+                    statusEl.innerHTML = '<span class="text-amber-400">جاري الاتصال بـ Firebase...</span>';
+                }
+            });
+        }
+
         // ---------- Toast Notifications ----------
         function showToast(message, type = 'info') {
             const container = document.getElementById('toastContainer');
@@ -781,7 +814,7 @@
                             createdAt: new Date().toISOString()
                         }, (error) => {
                             if (error) {
-                                showToast('خطأ Firebase: ' + error.message, 'error');
+                                showToast(firebaseErrorHint(error), 'error');
                             } else {
                                 showToast('تم حفظ رقمك بنجاح! أرسل رسالة على الواتساب لتفعيل حسابك', 'success');
                                 const waMsg = 'مرحباً مهندس محمد، أريد تفعيل رقمي ' + phone + ' على منصة المكتب الفني.';
@@ -794,7 +827,7 @@
                     isHandled = true;
                     clearTimeout(safetyTimer);
                     console.error(error);
-                    showToast('خطأ قواعد Firebase (Rules): ' + error.message, 'error');
+                    showToast(firebaseErrorHint(error), 'error');
                     btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> دخول المنصة';
                     btn.disabled = false;
                 });
@@ -828,7 +861,7 @@
                     btn.innerHTML = '<i class="fa-brands fa-whatsapp text-sm"></i> إرسال طلب التفعيل عبر الواتساب';
                     btn.disabled = false;
                     if (error) {
-                        showToast('حدث خطأ أثناء حفظ الطلب: ' + error.message, 'error');
+                        showToast(firebaseErrorHint(error), 'error');
                     } else {
                         showToast('تم تسجيل طلبك بنجاح! أكمل التفعيل عبر الواتساب', 'success');
                         const waMsg = 'مرحباً مهندس محمد، أنا الطالب ' + name + ' من محافظة ' + governorate + ' ورقمي هو ' + phone + '، أرغب في تفعيل حسابي على منصة المكتب الفني.';
@@ -1029,6 +1062,7 @@
             initReveal();
             initCounters();
             verifySavedSession();
+            checkFirebaseHealth();
         });
     </script>
 
