@@ -11,7 +11,7 @@
     <!-- Google Fonts (Tajawal) -->
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
 
-    <!-- Firebase App & Realtime Database SDK (Compat Bundle) -->
+    <!-- Firebase App & Realtime Database SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
@@ -105,7 +105,7 @@
                     <label class="block text-xs font-semibold text-slate-300 mb-1">رقم الواتساب الخاص بك</label>
                     <input type="tel" id="regPhone" required placeholder="010XXXXXXXX" class="w-full bg-navy-800/80 border border-slate-700/80 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
                 </div>
-                <button type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl text-xs transition shadow-lg shadow-green-600/20 mt-2 flex items-center justify-center gap-2">
+                <button type="submit" id="regBtnSubmit" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl text-xs transition shadow-lg shadow-green-600/20 mt-2 flex items-center justify-center gap-2">
                     <i class="fa-brands fa-whatsapp text-sm"></i> إرسال طلب تفعيل الحجز عبر الواتساب
                 </button>
             </form>
@@ -406,7 +406,6 @@
 
     <!-- FIREBASE INITIALIZATION & LOGIC -->
     <script>
-        // FIREBASE CONFIGURATION (المحدث بالرابط المباشر)
         const firebaseConfig = {
             apiKey: "AIzaSyBO34EZgVpZquo1TWF52r47WujWZbqukFU",
             authDomain: "mgpro-2f83b.firebaseapp.com",
@@ -418,7 +417,6 @@
             measurementId: "G-5H1EQDFBRS"
         };
 
-        // Initialize Firebase
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
@@ -446,49 +444,61 @@
             if (type === 'login') {
                 const phone = document.getElementById('loginPhone').value.trim();
                 const btn = document.getElementById('loginBtnSubmit');
-                btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> جاري التحقق...';
+                btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> جاري التحقق من الفايربيس...';
 
+                // صاحب المنصة مفعل دائماً
                 if (phone === '01070471353') {
-                    activateUserSession('المهندس محمد جمال عوض (صاحب المنصة)');
+                    activateUserSession('المهندس محمد جمال عوض');
                     return;
                 }
 
+                // فحص حالة الحساب في الفايربيس
                 db.ref('students/' + phone).once('value').then((snapshot) => {
                     const studentData = snapshot.val();
                     if (studentData && studentData.status === 'active') {
                         activateUserSession(studentData.name || phone);
                     } else if (studentData && studentData.status === 'pending') {
-                        alert('حسابك قيد التفعيل. يرجى إتمام الحجز مع المهندس محمد ليتم فتح المنصة لك فوراً.');
+                        alert('حسابك قيد التفعيل. يرجى التواصل مع المهندس محمد ليتم فتح المنصة لك فوراً.');
                         btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> دخول المنصة';
                     } else {
+                        // إضافة الطالب تلقائياً في الفايربيس بحالة معلقة ليظهر في الأدمن
                         db.ref('students/' + phone).set({
                             phone: phone,
                             name: 'طالب جديد',
                             status: 'pending',
                             createdAt: new Date().toISOString()
+                        }).then(() => {
+                            alert('تم تسجيل رقمك بنجاح! تواصل مع المهندس لتفعيل رقمك ودخول الكورس.');
+                            btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> دخول المنصة';
                         });
-                        alert('تم تسجيل طلبك! تواصل مع المهندس عبر الواتساب لتفعيل حسابك على هذا الرقم.');
-                        btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> دخول المنصة';
                     }
                 }).catch((err) => {
                     console.error(err);
-                    alert('حدث خطأ في الاتصال بالخادم. حاول مجدداً.');
+                    alert('خطأ في الاتصال بالشبكة: ' + err.message);
                     btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> دخول المنصة';
                 });
 
             } else if (type === 'register') {
-                const name = document.getElementById('regName').value;
+                const name = document.getElementById('regName').value.trim();
                 const phone = document.getElementById('regPhone').value.trim();
+                const btn = document.getElementById('regBtnSubmit');
 
+                btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> جاري إرسال الطلب...';
+
+                // حفظ الطلب في Firebase ليظهر فوراً بالأدمن
                 db.ref('students/' + phone).set({
                     phone: phone,
                     name: name,
                     status: 'pending',
                     createdAt: new Date().toISOString()
+                }).then(() => {
+                    const waUrl = `https://wa.me/201070471353?text=مرحباً%20مهندس%20محمد،%20أنا%20الطالب%20${encodeURIComponent(name)}%20ورقمي%20هو%20${encodeURIComponent(phone)}%D8%8C%20أرغب%20في%20تفعيل%20حسابي%20على%20منصة%20المكتب%20الفني.`;
+                    window.open(waUrl, '_blank');
+                    btn.innerHTML = '<i class="fa-brands fa-whatsapp text-sm"></i> إرسال طلب تفعيل الحجز عبر الواتساب';
+                }).catch((err) => {
+                    alert('حدث خطأ: ' + err.message);
+                    btn.innerHTML = '<i class="fa-brands fa-whatsapp text-sm"></i> إرسال طلب تفعيل الحجز عبر الواتساب';
                 });
-
-                const waUrl = `https://wa.me/201070471353?text=مرحباً%20مهندس%20محمد،%20أنا%20الطالب%20${encodeURIComponent(name)}%20ورقمي%20هو%20${encodeURIComponent(phone)}%D8%8C%20أرغب%20في%20تفعيل%20حسابي%20على%20منصة%20المكتب%20الفني.`;
-                window.open(waUrl, '_blank');
             }
         }
 
