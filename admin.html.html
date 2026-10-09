@@ -50,6 +50,7 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
     </style>
+<style id="mg-admin-premium">.glass-panel,.glass-card{box-shadow:0 12px 34px rgba(0,0,0,.14)}input,select,button{transition:all .2s ease}input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid #f59e0b;outline-offset:3px}table tbody tr:hover{background:rgba(245,158,11,.055)}</style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
 
@@ -121,6 +122,15 @@
                 </form>
             </div>
 
+
+<section class="glass-panel p-6 rounded-2xl" id="designControl"><div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5"><div><h3 class="text-lg font-black text-white"><i class="fa-solid fa-wand-magic-sparkles text-amber-500 ml-2"></i>تخصيص شكل المنصة</h3><p class="text-slate-400 text-xs mt-1">تُحفظ الإعدادات على Firebase وتظهر لزوار الموقع.</p></div><span id="designSaveStatus" class="text-xs text-slate-400">جاهز للتعديل</span></div>
+<form id="designForm" onsubmit="saveDesignSettings(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"><label class="block text-xs text-slate-300">اللون الرئيسي<div class="flex items-center gap-3 mt-2 bg-navy-800 border border-slate-700 rounded-xl p-2"><input id="designAccent" type="color" value="#f59e0b" class="h-9 w-12 bg-transparent border-0 cursor-pointer"><span class="text-slate-400">لون التفاصيل والأزرار</span></div></label>
+<label class="block text-xs text-slate-300">استدارة الإطارات<div class="mt-2 flex items-center gap-3"><input id="designRadius" type="range" min="8" max="36" value="22" class="w-full accent-amber-500" oninput="document.getElementById('radiusValue').textContent=this.value+'px'"><span id="radiusValue" class="text-amber-400 w-12">22px</span></div></label>
+<label class="block text-xs text-slate-300">قوة الوهج<div class="mt-2 flex items-center gap-3"><input id="designGlow" type="range" min="0" max="55" value="22" class="w-full accent-amber-500" oninput="document.getElementById('glowValue').textContent=this.value+'%'"><span id="glowValue" class="text-amber-400 w-12">22%</span></div></label>
+<label class="block text-xs text-slate-300">خلفية الموقع<select id="designBackground" class="mt-2 w-full bg-navy-800 border border-slate-700 rounded-xl px-3 py-3 text-white"><option value="navy">كحلي فاخر</option><option value="midnight">أسود ليلي</option><option value="slate">رمادي داكن</option></select></label>
+<label class="block text-xs text-slate-300">نمط البطاقات<select id="designCardStyle" class="mt-2 w-full bg-navy-800 border border-slate-700 rounded-xl px-3 py-3 text-white"><option value="glass">زجاجي شفاف</option><option value="balanced">زجاجي متوازن</option><option value="solid">داكن مصمت</option></select></label>
+<div class="flex items-end"><button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-navy-900 font-black rounded-xl px-4 py-3"><i class="fa-solid fa-floppy-disk ml-2"></i>حفظ وتطبيق التصميم</button></div></form><div class="mt-5 p-4 rounded-xl border border-slate-700 bg-navy-900/60"><div class="text-xs text-slate-400 mb-3">معاينة تقريبية</div><div id="designPreview" class="rounded-2xl p-5 border border-amber-500/30 bg-navy-800"><div class="flex items-center gap-3"><div class="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-400"><i class="fa-solid fa-cubes text-xl"></i></div><div><div class="font-black text-white">MG PRO</div><div class="text-xs text-slate-400">تصميم احترافي للمكتب الفني</div></div></div></div></div></section>
+
             <!-- Students List Table -->
             <div class="glass-panel p-6 rounded-2xl">
                 <div class="flex justify-between items-center mb-6">
@@ -169,6 +179,12 @@
             firebase.initializeApp(firebaseConfig);
         }
         const db = firebase.database();
+        function currentDesignForm(){return{accent:document.getElementById('designAccent').value,radius:Number(document.getElementById('designRadius').value),glow:Number(document.getElementById('designGlow').value)/100,background:document.getElementById('designBackground').value,cardStyle:document.getElementById('designCardStyle').value}}
+        function previewDesign(){const d=currentDesignForm(),p=document.getElementById('designPreview');if(!p)return;p.style.borderColor=d.accent;p.style.borderRadius=d.radius+'px';p.style.boxShadow='0 12px 30px '+d.accent+Math.round(d.glow*255).toString(16).padStart(2,'0')}
+        async function saveDesignSettings(e){e.preventDefault();const status=document.getElementById('designSaveStatus'),btn=document.querySelector('#designForm button[type="submit"]');status.textContent='جاري الحفظ...';btn.disabled=true;try{await db.ref('siteSettings/design').set({...currentDesignForm(),updatedAt:new Date().toISOString()});status.textContent='تم الحفظ بنجاح ✓'}catch(err){status.textContent='تعذر الحفظ — راجع صلاحيات Firebase';console.error(err)}finally{btn.disabled=false}}
+        function loadDesignSettings(){db.ref('siteSettings/design').once('value').then(snap=>{const d=snap.val();if(!d)return;if(d.accent)document.getElementById('designAccent').value=d.accent;if(d.radius)document.getElementById('designRadius').value=d.radius;if(d.glow!=null)document.getElementById('designGlow').value=Math.round(d.glow*100);if(d.background)document.getElementById('designBackground').value=d.background;if(d.cardStyle)document.getElementById('designCardStyle').value=d.cardStyle;document.getElementById('radiusValue').textContent=document.getElementById('designRadius').value+'px';document.getElementById('glowValue').textContent=document.getElementById('designGlow').value+'%';previewDesign()}).catch(err=>console.warn(err))}
+        ['designAccent','designRadius','designGlow','designBackground','designCardStyle'].forEach(id=>document.addEventListener('input',ev=>{if(ev.target&&ev.target.id===id)previewDesign()}));
+
 
         function handleLogin(e) {
             e.preventDefault();
@@ -178,6 +194,7 @@
             if (user === 'eng_mohamed' && pass === 'admin1234') {
                 document.getElementById('loginSection').classList.add('hidden');
                 document.getElementById('adminMain').classList.remove('hidden');
+                loadDesignSettings();
                 loadRealtimeStudents();
             } else {
                 document.getElementById('loginError').classList.remove('hidden');
