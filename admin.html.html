@@ -51,6 +51,11 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
+        /* Global mobile safety */
+        html, body { overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+        img { max-width: 100%; height: auto; }
+        button, a { touch-action: manipulation; }
+
         /* Toast notifications */
         #toastContainer { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; align-items: center; }
         .toast { padding: 12px 20px; border-radius: 14px; font-size: 13px; font-weight: 700; color: white; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.5); animation: toastIn .35s cubic-bezier(.21,1.02,.73,1) forwards; max-width: 92vw; }
@@ -60,13 +65,21 @@
         .toast.hide { animation: toastOut .3s ease forwards; }
         @keyframes toastIn { from { opacity:0; transform: translateY(20px) scale(.95);} to { opacity:1; transform: translateY(0) scale(1);} }
         @keyframes toastOut { from { opacity:1;} to { opacity:0; transform: translateY(15px);} }
+
+        /* Mobile polish */
+        @media (max-width: 640px) {
+            #toastContainer { bottom: 88px; }
+        }
+        @media (hover: none) {
+            .glass-card:hover { transform: none; box-shadow: none; border-color: rgba(255,255,255,.05); }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
 
     <!-- LOGIN SCREEN -->
     <div id="loginSection" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-900 bg-opacity-95 backdrop-blur-md">
-        <div class="glass-panel w-full max-w-md p-8 rounded-2xl shadow-2xl border border-amber-500/20 text-center">
+        <div class="glass-panel w-full max-w-md p-6 sm:p-8 rounded-2xl shadow-2xl border border-amber-500/20 text-center max-h-[92vh] overflow-y-auto">
             <div class="w-20 h-20 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center mx-auto mb-6 text-amber-500 text-3xl">
                 <i class="fa-solid fa-user-shield"></i>
             </div>
@@ -89,6 +102,8 @@
                     <i class="fa-solid fa-lock-open ml-2"></i> دخول النظام
                 </button>
             </form>
+
+            <p id="firebaseStatus" class="text-[10px] text-slate-500 mt-4 leading-relaxed"><i class="fa-solid fa-circle text-slate-600 text-[6px] animate-pulse ml-1"></i> جاري فحص الاتصال بقاعدة البيانات...</p>
         </div>
     </div>
 
@@ -101,8 +116,8 @@
                         <i class="fa-solid fa-laptop-code"></i>
                     </div>
                     <div>
-                        <h1 class="text-base font-bold text-white">لوحة تفعيل أرقام الطلاب والمنصة</h1>
-                        <p class="text-xs text-amber-500 font-semibold">م. محمد جمال عوض</p>
+                        <h1 class="text-sm sm:text-base font-bold text-white">لوحة تفعيل أرقام الطلاب والمنصة</h1>
+                        <p class="hidden sm:block text-xs text-amber-500 font-semibold">م. محمد جمال عوض</p>
                     </div>
                 </div>
 
@@ -113,10 +128,10 @@
         </header>
 
         <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full space-y-8">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-l from-navy-800 to-navy-700 p-6 rounded-2xl border border-slate-800">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-l from-navy-800 to-navy-700 p-5 sm:p-6 rounded-2xl border border-slate-800">
                 <div>
-                    <h2 class="text-2xl font-black text-white">إدارة اشتراكات الطلاب والمشتركين 👷‍♂️</h2>
-                    <p class="text-slate-400 text-sm mt-1">اضغط قبول وتفعيل لأي طالب ليصلك تفعيله فورياً عبر قاعدة البيانات.</p>
+                    <h2 class="text-lg sm:text-2xl font-black text-white">إدارة اشتراكات الطلاب والمشتركين 👷‍♂️</h2>
+                    <p class="text-slate-400 text-xs sm:text-sm mt-1">اضغط قبول وتفعيل لأي طالب ليصلك تفعيله فورياً عبر قاعدة البيانات.</p>
                 </div>
             </div>
 
@@ -212,6 +227,18 @@
             setTimeout(() => { toast.classList.add('hide'); setTimeout(() => toast.remove(), 350); }, 4000);
         }
 
+        // ---------- Firebase Error Diagnostics ----------
+        function firebaseErrorHint(error) {
+            const code = String((error && error.code) || (error && error.message) || '');
+            if (code.includes('permission') || code.includes('PERMISSION_DENIED') || code.includes('unauthorized')) {
+                return 'إذن مرفوض من Firebase Rules - عدّل قواعد قاعدة البيانات لتسمح بالقراءة والكتابة';
+            }
+            if (code.includes('network') || code.includes('unavailable') || code.includes('timeout')) {
+                return 'مشكلة في الاتصال بالإنترنت أو سيرفر Firebase';
+            }
+            return (error && error.message) || 'خطأ غير معروف';
+        }
+
         function escapeHtml(str) {
             return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
         }
@@ -255,7 +282,7 @@
                 renderTable();
             }, (error) => {
                 console.error(error);
-                document.getElementById('connStatus').innerHTML = '<span class="text-red-400"><i class="fa-solid fa-triangle-exclamation"></i> خطأ في الاتصال</span>';
+                document.getElementById('connStatus').innerHTML = '<span class="text-red-400"><i class="fa-solid fa-triangle-exclamation"></i> ' + firebaseErrorHint(error) + '</span>';
             });
         }
 
@@ -318,14 +345,14 @@
         function toggleStudentStatus(phone, newStatus) {
             db.ref('students/' + phone).update({ status: newStatus }).then(() => {
                 showToast(newStatus === 'active' ? 'تم تفعيل حساب الطالب بنجاح!' : 'تم تغيير حالة الطالب إلى معلق.', newStatus === 'active' ? 'success' : 'info');
-            }).catch(err => showToast('خطأ أثناء التعديل: ' + err.message, 'error'));
+            }).catch(err => showToast('خطأ أثناء التعديل: ' + firebaseErrorHint(err), 'error'));
         }
 
         function deleteStudent(phone) {
             if (!confirm('هل أنت متأكد من حذف هذا الطالب نهائياً من قاعدة البيانات؟')) return;
             db.ref('students/' + phone).remove().then(() => {
                 showToast('تم حذف الطالب بنجاح', 'success');
-            }).catch(err => showToast('خطأ أثناء الحذف: ' + err.message, 'error'));
+            }).catch(err => showToast('خطأ أثناء الحذف: ' + firebaseErrorHint(err), 'error'));
         }
 
         function addManualStudent(e) {
@@ -358,7 +385,7 @@
                 document.getElementById('manualPhone').value = '';
                 addBtn.innerText = 'تفعيل وإضافة الرقم فوراً';
             }).catch((err) => {
-                showToast('فشل الإضافة: ' + err.message, 'error');
+                showToast('فشل الإضافة: ' + firebaseErrorHint(err), 'error');
                 addBtn.innerText = 'تفعيل وإضافة الرقم فوراً';
             });
         }
@@ -387,6 +414,22 @@
         }
 
         // ---------- Init ----------
+        function checkFirebaseHealth() {
+            const statusEl = document.getElementById('firebaseStatus');
+            if (!statusEl) return;
+            db.ref('.info/connected').on('value', (snap) => {
+                if (snap.val() === true) {
+                    db.ref('students').limitToFirst(1).once('value', () => {
+                        statusEl.innerHTML = '<i class="fa-solid fa-circle text-green-400 text-[6px] ml-1"></i> الاتصال بقاعدة البيانات سليم';
+                    }, (err) => {
+                        statusEl.innerHTML = '<span class="text-red-400 font-semibold">⚠️ ' + firebaseErrorHint(err) + '</span>';
+                    });
+                } else {
+                    statusEl.innerHTML = '<span class="text-amber-400">جاري الاتصال بـ Firebase...</span>';
+                }
+            });
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             // مؤشر حالة الاتصال بقاعدة البيانات
             db.ref('.info/connected').on('value', (snap) => {
@@ -402,6 +445,8 @@
             if (sessionStorage.getItem('mgpro_admin') === '1') {
                 showDashboard();
             }
+
+            checkFirebaseHealth();
         });
     </script>
 
