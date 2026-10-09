@@ -156,7 +156,7 @@
         const firebaseConfig = {
             apiKey: "AIzaSyBO34EZgVpZquo1TWF52r47WujWZbqukFU",
             authDomain: "mgpro-2f83b.firebaseapp.com",
-            databaseURL: "https://mgpro-2f83b-default-rtdb.firebaseio.com",
+            databaseURL: "https://mohamedgamal11-default-rtdb.firebaseio.com",
             projectId: "mgpro-2f83b",
             storageBucket: "mgpro-2f83b.firebasestorage.app",
             messagingSenderId: "964974315895",
@@ -198,7 +198,7 @@
                 const data = snapshot.val();
 
                 if (!data) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">لا يوجد طلاب أو طلبات مسجلة حالياً. قم بإضافة أول طالب بالأعلى.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">لا يوجد طلاب مسجلين. يمكنك إضافة أول طالب بالأعلى.</td></tr>';
                     return;
                 }
 
@@ -232,7 +232,6 @@
             }, (error) => {
                 console.error(error);
                 statusLabel.innerHTML = '<span class="text-red-400"><i class="fa-solid fa-triangle-exclamation"></i> خطأ في الاتصال بالـ Realtime Database</span>';
-                alert('خطأ فايربيس: ' + error.message);
             });
         }
 
@@ -262,7 +261,7 @@
                 addBtn.innerText = 'تفعيل وإضافة الرقم فوراً';
             }).catch((err) => {
                 console.error(err);
-                alert('فشل الإضافة: ' + err.message + '\nتأكد من تطبيق Rules كـ true داخل Firebase Console.');
+                alert('فشل الإضافة: ' + err.message);
                 addBtn.innerText = 'تفعيل وإضافة الرقم فوراً';
             });
         }
