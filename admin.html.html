@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - م. محمد جمال عوض (المكتب الفني)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Firebase App & Realtime Database SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            900: '#0B1325',
+                            800: '#111C35',
+                            700: '#1A2942',
+                            600: '#233658'
+                        },
+                        amber: {
+                            500: '#D97706',
+                            600: '#B45309'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Tajawal', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #0B1325; color: #E2E8F0; }
+        .glass-panel {
+            background: rgba(17, 28, 53, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: rgba(26, 41, 66, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginSection" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-900 bg-opacity-95 backdrop-blur-md">
+        <div class="glass-panel w-full max-w-md p-8 rounded-2xl shadow-2xl border border-amber-500/20 text-center">
+            <div class="w-20 h-20 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center mx-auto mb-6 text-amber-500 text-3xl">
+                <i class="fa-solid fa-user-shield"></i>
+            </div>
+            <h2 class="text-2xl font-black text-white mb-2">لوحة إدارة الطلاب والاشتراكات</h2>
+            <p class="text-slate-400 text-sm mb-6">م. محمد جمال عوض - كورسات المكتب الفني والداتا</p>
+
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4 text-right">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">اسم المستخدم</label>
+                    <input type="text" id="username" required value="eng_mohamed" class="w-full bg-navy-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">كلمة المرور</label>
+                    <input type="password" id="password" required value="admin1234" class="w-full bg-navy-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 text-sm">
+                </div>
+                <div id="loginError" class="hidden text-red-400 text-xs font-semibold py-1">
+                    <i class="fa-solid fa-triangle-exclamation ml-1"></i> بيانات الدخول غير صحيحة
+                </div>
+                <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-navy-900 font-bold py-3 rounded-xl transition duration-300 shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid fa-lock-open ml-2"></i> دخول النظام
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN ADMIN DASHBOARD -->
+    <div id="adminMain" class="hidden flex-grow flex flex-col">
+        <header class="glass-panel border-b border-slate-800 sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-500 font-black">
+                        <i class="fa-solid fa-laptop-code"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base font-bold text-white">لوحة تفعيل أرقام الطلاب والمنصة</h1>
+                        <p class="text-xs text-amber-500 font-semibold">م. محمد جمال عوض</p>
+                    </div>
+                </div>
+
+                <button onclick="handleLogout()" class="px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 rounded-xl text-xs font-bold transition">
+                    <i class="fa-solid fa-right-from-bracket ml-1"></i> خروج
+                </button>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full space-y-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-l from-navy-800 to-navy-700 p-6 rounded-2xl border border-slate-800">
+                <div>
+                    <h2 class="text-2xl font-black text-white">إدارة اشتراكات الطلاب والمشتركين 👷‍♂️</h2>
+                    <p class="text-slate-400 text-sm mt-1">اضغط قبول وتفعيل لأي طالب ليصلك تفعيله فورياً عبر قاعدة البيانات.</p>
+                </div>
+            </div>
+
+            <!-- Add Direct Student Form -->
+            <div class="glass-panel p-6 rounded-2xl">
+                <h3 class="text-base font-bold text-white mb-4"><i class="fa-solid fa-user-plus text-amber-500 ml-2"></i>تفعيل رقم طالب يدوي فوري</h3>
+                <form onsubmit="addManualStudent(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <input type="text" id="manualName" placeholder="اسم الطالب" required class="bg-navy-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs">
+                    <input type="tel" id="manualPhone" placeholder="رقم الهاتف (010XXXXXXXX)" required class="bg-navy-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs">
+                    <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-navy-900 font-bold py-2 rounded-xl text-xs">
+                        تفعيل وإضافة الرقم فوراً
+                    </button>
+                </form>
+            </div>
+
+            <!-- Students List Table -->
+            <div class="glass-panel p-6 rounded-2xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-users text-amber-500 ml-2"></i>قائمة الطلاب المسجلين</h3>
+                    <span class="text-xs text-green-400 font-semibold"><i class="fa-solid fa-circle text-[8px] animate-pulse"></i> متصل بـ Firebase</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-navy-800 text-slate-400 text-xs uppercase border-b border-slate-700">
+                            <tr>
+                                <th class="p-4">اسم الطالب</th>
+                                <th class="p-4">رقم الهاتف / الواتساب</th>
+                                <th class="p-4">الحالة</th>
+                                <th class="p-4 text-center">الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsTableBody" class="divide-y divide-slate-800">
+                            <!-- Dynamic Content Loaded Realtime -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
+            لوحة إدارة المكتب الفني ودورة الداتا - المهندس محمد جمال عوض © 2026.
+        </footer>
+    </div>
+
+    <!-- FIREBASE INITIALIZATION & LOGIC -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBO34EZgVpZquo1TWF52r47WujWZbqukFU",
+            authDomain: "mgpro-2f83b.firebaseapp.com",
+            databaseURL: "https://mgpro-2f83b-default-rtdb.firebaseio.com",
+            projectId: "mgpro-2f83b",
+            storageBucket: "mgpro-2f83b.firebasestorage.app",
+            messagingSenderId: "964974315895",
+            appId: "1:964974315895:web:be0ccc00b4cc12c3437972",
+            measurementId: "G-P7FDTGQZ4Y"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+
+            if (user === 'eng_mohamed' && pass === 'admin1234') {
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('adminMain').classList.remove('hidden');
+                loadRealtimeStudents();
+            } else {
+                document.getElementById('loginError').classList.remove('hidden');
+            }
+        }
+
+        function handleLogout() {
+            location.reload();
+        }
+
+        function loadRealtimeStudents() {
+            db.ref('students').on('value', (snapshot) => {
+                const tbody = document.getElementById('studentsTableBody');
+                tbody.innerHTML = '';
+                const data = snapshot.val();
+
+                if (!data) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">لا يوجد طلبات مسجلة حالياً.</td></tr>';
+                    return;
+                }
+
+                Object.keys(data).forEach((phoneKey) => {
+                    const student = data[phoneKey];
+                    const isActive = student.status === 'active';
+
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-navy-800/50">
+                            <td class="p-4 font-bold text-white">${student.name || 'طالب بدون اسم'}</td>
+                            <td class="p-4 text-amber-400 font-bold" dir="ltr">${student.phone}</td>
+                            <td class="p-4">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold ${isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}">
+                                    ${isActive ? 'مُفعل' : 'معلق'}
+                                </span>
+                            </td>
+                            <td class="p-4 text-center">
+                                ${isActive ? `
+                                    <button onclick="toggleStudentStatus('${student.phone}', 'pending')" class="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-xs font-bold hover:bg-red-500/30">
+                                        إلغاء التفعيل
+                                    </button>
+                                ` : `
+                                    <button onclick="toggleStudentStatus('${student.phone}', 'active')" class="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold hover:bg-emerald-500/30">
+                                        قبول وتفعيل
+                                    </button>
+                                `}
+                            </td>
+                        </tr>
+                    `;
+                });
+            });
+        }
+
+        function toggleStudentStatus(phone, newStatus) {
+            db.ref('students/' + phone).update({ status: newStatus }).then(() => {
+                alert(newStatus === 'active' ? 'تم تفعيل حساب الطالب بنجاح!' : 'تم تغيير حالة الطالب لـ معلق.');
+            });
+        }
+
+        function addManualStudent(e) {
+            e.preventDefault();
+            const name = document.getElementById('manualName').value.trim();
+            const phone = document.getElementById('manualPhone').value.trim();
+
+            db.ref('students/' + phone).set({
+                phone: phone,
+                name: name,
+                status: 'active',
+                createdAt: new Date().toISOString()
+            }).then(() => {
+                alert('تم إضافة وتفعيل الطالب بنجاح!');
+                document.getElementById('manualName').value = '';
+                document.getElementById('manualPhone').value = '';
+            });
+        }
+    </script>
+</body>
+</html>
