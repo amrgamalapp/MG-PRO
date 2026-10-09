@@ -1,0 +1,5 @@
+.env
+__pycache__/
+data/courses.json
+uploads/*
+!uploads/.gitkeep
