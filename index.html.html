@@ -121,7 +121,6 @@
 
     <!-- MAIN APP CONTENT -->
     <div id="mainApp" class="flex-grow flex flex-col hidden">
-        <!-- HEADER -->
         <header class="glass-panel sticky top-0 z-40 border-b border-slate-800/80">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
                 <a href="#" class="flex items-center gap-3">
@@ -452,8 +451,22 @@
                     return;
                 }
 
-                // فحص حالة الحساب في الفايربيس
+                let completed = false;
+
+                // مهلة أمان للاتصال لعدم التعليق
+                const timer = setTimeout(() => {
+                    if (!completed) {
+                        completed = true;
+                        btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> دخول المنصة';
+                        alert('عذراً، تعذر الاتصال بالخادم. يرجى التأكد من الإنترنت أو تفعيل الحساب من الواتساب.');
+                    }
+                }, 6000);
+
                 db.ref('students/' + phone).once('value').then((snapshot) => {
+                    if (completed) return;
+                    completed = true;
+                    clearTimeout(timer);
+
                     const studentData = snapshot.val();
                     if (studentData && studentData.status === 'active') {
                         activateUserSession(studentData.name || phone);
@@ -461,20 +474,22 @@
                         alert('حسابك قيد التفعيل. يرجى التواصل مع المهندس محمد ليتم فتح المنصة لك فوراً.');
                         btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> دخول المنصة';
                     } else {
-                        // إضافة الطالب تلقائياً في الفايربيس بحالة معلقة ليظهر في الأدمن
                         db.ref('students/' + phone).set({
                             phone: phone,
                             name: 'طالب جديد',
                             status: 'pending',
                             createdAt: new Date().toISOString()
                         }).then(() => {
-                            alert('تم تسجيل رقمك بنجاح! تواصل مع المهندس لتفعيل رقمك ودخول الكورس.');
+                            alert('تم تسجيل رقمك بنجاح! تواصل مع المهندس عبر الواتساب لتفعيل حسابك والدخول.');
                             btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> دخول المنصة';
                         });
                     }
                 }).catch((err) => {
+                    if (completed) return;
+                    completed = true;
+                    clearTimeout(timer);
                     console.error(err);
-                    alert('خطأ في الاتصال بالشبكة: ' + err.message);
+                    alert('خطأ في الاتصال: ' + err.message);
                     btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> دخول المنصة';
                 });
 
@@ -485,7 +500,6 @@
 
                 btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> جاري إرسال الطلب...';
 
-                // حفظ الطلب في Firebase ليظهر فوراً بالأدمن
                 db.ref('students/' + phone).set({
                     phone: phone,
                     name: name,
