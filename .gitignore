@@ -1,6 +1,0 @@
-.env
-__pycache__/
-.venv/
-data/courses.json
-uploads/*
-!uploads/.gitkeep
