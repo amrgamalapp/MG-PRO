@@ -1,125 +1,540 @@
-<!-- FIREBASE INITIALIZATION & LOGIC -->
-<script>
-    // FIREBASE CONFIGURATION (المحدث)
-    const firebaseConfig = {
-        apiKey: "AIzaSyBO34EZgVpZquo1TWF52r47WujWZbqukFU",
-        authDomain: "mgpro-2f83b.firebaseapp.com",
-        databaseURL: "https://mgpro-2f83b-default-rtdb.firebaseio.com",
-        projectId: "mgpro-2f83b",
-        storageBucket: "mgpro-2f83b.firebasestorage.app",
-        messagingSenderId: "964974315895",
-        appId: "1:964974315895:web:be64f714bab53dd6437972",
-        measurementId: "G-5H1EQDFBRS"
-    };
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة المهندس محمد جمال عوض - المكتب الفني المساحي والداتا</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Tajawal) -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
 
-    // Initialize Firebase & Database
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    <!-- Firebase App & Realtime Database SDK (Compat Bundle) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
-    let isGuest = false;
-    let isSubscriber = false;
-
-    function switchAuthTab(tab) {
-        if(tab === 'login') {
-            document.getElementById('loginForm').classList.remove('hidden');
-            document.getElementById('registerForm').classList.add('hidden');
-            document.getElementById('tabLoginBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg text-amber-500 bg-navy-800 transition';
-            document.getElementById('tabRegisterBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
-        } else {
-            document.getElementById('loginForm').classList.add('hidden');
-            document.getElementById('registerForm').classList.remove('hidden');
-            document.getElementById('tabRegisterBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg text-amber-500 bg-navy-800 transition';
-            document.getElementById('tabLoginBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            950: '#070C18',
+                            900: '#0B1325',
+                            800: '#111C35',
+                            700: '#1A2942',
+                            600: '#233658'
+                        },
+                        amber: {
+                            500: '#D97706',
+                            600: '#B45309'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Tajawal', 'sans-serif'],
+                    }
+                }
+            }
         }
-    }
+    </script>
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #070C18; color: #E2E8F0; }
+        .glass-panel {
+            background: rgba(17, 28, 53, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: rgba(26, 41, 66, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(217, 119, 6, 0.4);
+            box-shadow: 0 10px 30px -10px rgba(217, 119, 6, 0.25);
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0B1325; }
+        ::-webkit-scrollbar-thumb { background: #1A2942; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #D97706; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-amber-500 selection:text-navy-950">
 
-    function handleAuth(e, type) {
-        e.preventDefault();
-        if (type === 'login') {
-            const phone = document.getElementById('loginPhone').value.trim();
-            const btn = document.getElementById('loginBtnSubmit');
-            btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> جاري التحقق...';
+    <!-- AUTHENTICATION MODAL -->
+    <div id="authModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/95 backdrop-blur-md transition-all duration-300">
+        <div class="glass-panel w-full max-w-md p-6 sm:p-8 rounded-3xl border border-amber-500/20 shadow-2xl relative overflow-hidden">
+            
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center mx-auto mb-3 text-amber-500 text-2xl shadow-inner">
+                    <i class="fa-solid fa-laptop-code"></i>
+                </div>
+                <h2 class="text-xl font-black text-white">منصة المهندس محمد جمال عوض</h2>
+                <p class="text-slate-400 text-xs mt-1">المكتب الفني المساحي، إعداد الداتا، والبرامج الهندسية</p>
+            </div>
 
-            if (phone === '01070471353') {
-                activateUserSession('المهندس محمد جمال عوض (صاحب المنصة)');
+            <div class="flex rounded-xl bg-navy-900 p-1 mb-6 border border-slate-800">
+                <button id="tabLoginBtn" onclick="switchAuthTab('login')" class="flex-1 py-2 text-xs font-bold rounded-lg text-amber-500 bg-navy-800 transition">تسجيل الدخول بالهاتف</button>
+                <button id="tabRegisterBtn" onclick="switchAuthTab('register')" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition">طلب تفعيل حساب</button>
+            </div>
+
+            <!-- LOGIN FORM -->
+            <form id="loginForm" onsubmit="handleAuth(event, 'login')" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">رقم الهاتف المسجل لدى المهندس</label>
+                    <div class="relative">
+                        <input type="tel" id="loginPhone" required placeholder="01070471353" class="w-full bg-navy-800/80 border border-slate-700/80 rounded-xl px-4 py-2.5 pl-10 text-xs text-white focus:outline-none focus:border-amber-500">
+                        <i class="fa-solid fa-phone absolute left-3 top-3 text-slate-500 text-xs"></i>
+                    </div>
+                </div>
+                <button type="submit" id="loginBtnSubmit" class="w-full bg-amber-500 hover:bg-amber-600 text-navy-950 font-bold py-3 rounded-xl text-xs transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i> دخول المنصة
+                </button>
+            </form>
+
+            <!-- REGISTER FORM -->
+            <form id="registerForm" onsubmit="handleAuth(event, 'register')" class="space-y-3 hidden">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">الاسم بالكامل</label>
+                    <input type="text" id="regName" required placeholder="أحمد محمود" class="w-full bg-navy-800/80 border border-slate-700/80 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">رقم الواتساب الخاص بك</label>
+                    <input type="tel" id="regPhone" required placeholder="010XXXXXXXX" class="w-full bg-navy-800/80 border border-slate-700/80 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl text-xs transition shadow-lg shadow-green-600/20 mt-2 flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-sm"></i> إرسال طلب تفعيل الحجز عبر الواتساب
+                </button>
+            </form>
+
+            <div class="mt-6 pt-4 border-t border-slate-800/80 text-center">
+                <button onclick="continueAsGuest()" class="w-full py-2.5 bg-navy-800 hover:bg-navy-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-user-clock text-amber-500"></i>
+                    <span>تصفح المنصة كـ زائر (تصفح بدون مشاهدة)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTENT -->
+    <div id="mainApp" class="flex-grow flex flex-col hidden">
+        <!-- HEADER -->
+        <header class="glass-panel sticky top-0 z-40 border-b border-slate-800/80">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+                <a href="#" class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-500 font-black text-xl shadow-inner">
+                        <i class="fa-solid fa-laptop-code"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base font-bold text-white tracking-wide">المهندس محمد جمال عوض</h1>
+                        <p class="text-xs text-amber-500 font-semibold">المكتب الفني المساحي والداتا</p>
+                    </div>
+                </a>
+
+                <nav class="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-300">
+                    <a href="#courses" class="hover:text-amber-500 transition">دبلومات المكتب الفني</a>
+                    <a href="#videos" class="hover:text-amber-500 transition">المكتبة المرئية المحمية</a>
+                    <a href="#files" class="hover:text-amber-500 transition">شيتات وقواعد الداتا</a>
+                    <a href="#about" class="hover:text-amber-500 transition">عن المهندس</a>
+                </nav>
+
+                <div class="flex items-center gap-3">
+                    <div id="userBadge" class="hidden sm:flex items-center gap-2 px-3 py-1 bg-navy-800 border border-slate-700 rounded-full text-xs font-semibold text-amber-400">
+                        <i class="fa-solid fa-shield-halved"></i> <span id="userNameDisplay">طالب مسجل</span>
+                    </div>
+                    <a href="https://wa.me/201070471353" target="_blank" class="bg-amber-500 hover:bg-amber-600 text-navy-950 font-bold px-4 py-2 rounded-xl text-xs sm:text-sm flex items-center gap-2 transition shadow-lg shadow-amber-500/20">
+                        <i class="fa-brands fa-whatsapp text-lg"></i>
+                        <span>تواصل وحجز</span>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- HERO SECTION -->
+        <section class="relative py-16 lg:py-20 overflow-hidden border-b border-slate-800/80">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="grid lg:grid-cols-12 gap-12 items-center">
+                    <div class="lg:col-span-7 text-right space-y-6">
+                        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold">
+                            <i class="fa-solid fa-file-invoice"></i>
+                            <span>تخصص المكتب الفني وإعداد الداتا الهندسي</span>
+                        </div>
+                        <h1 class="text-3xl sm:text-5xl font-black text-white leading-tight">
+                            احترف أعمال <span class="text-amber-500">المكتب الفني المساحي</span> ومعالجة الداتا
+                        </h1>
+                        <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
+                            المنصة الأولى المتخصصة بالكامل لمهندسي المساحة والمكتب الفني تحت إشراف المهندس محمد جمال عوض. تعلم إعداد المستخلصات، حساب كميات الحفر والردم، تحضير الداتا الحقلية، ومعالجة اللوحات على Civil 3D وAutoCAD.
+                        </p>
+                        <div class="flex flex-wrap gap-4 pt-2">
+                            <a href="#videos" class="bg-amber-500 hover:bg-amber-600 text-navy-950 font-bold px-6 py-3 rounded-xl text-sm transition shadow-lg shadow-amber-500/20">
+                                مشاهدة الفيديوهات المسجلة
+                            </a>
+                            <a href="#files" class="bg-navy-700 hover:bg-navy-600 text-white font-bold px-6 py-3 rounded-xl text-sm border border-slate-700 transition">
+                                تحميل شيتات الملاحظة والداتا
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-5">
+                        <div class="glass-panel p-6 rounded-3xl border border-slate-700/50 shadow-2xl space-y-5">
+                            <div class="flex items-center gap-4 border-b border-slate-800 pb-4">
+                                <div class="w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-black text-2xl border border-amber-500/30">
+                                    <i class="fa-solid fa-user-tie"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-bold text-white">م. محمد جمال عوض</h3>
+                                    <p class="text-xs text-slate-400">استشاري ومحاضر المكتب الفني والداتا</p>
+                                </div>
+                            </div>
+                            <ul class="space-y-3 text-xs text-slate-300">
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-amber-500"></i> خبرة 6 سنوات في تجهيز داتا كبرى المشروعات الهندسية.</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-amber-500"></i> احتراف إعداد مستخلصات الحفر والردم واللوحات التنفيذية.</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-amber-500"></i> فيديوهات وشروحات محمية مفعلة برقم هاتف المشترك فقط.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PROTECTED VIDEO PLAYER SECTION -->
+        <section id="videos" class="py-16 bg-navy-900/60 border-y border-slate-800/80">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-10 space-y-2">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold rounded-full">
+                        <i class="fa-solid fa-lock"></i> محتوى محمي للمشتركين فقط
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-black text-white">عروض كورسات الداتا والمكتب الفني</h2>
+                    <p class="text-slate-400 text-xs sm:text-sm">الفيديوهات تفتح تلقائياً فور التحقق من رقم هاتفك المفعل بالمنصة</p>
+                </div>
+
+                <div class="grid lg:grid-cols-12 gap-8 items-start">
+                    <!-- Video Player Container -->
+                    <div class="lg:col-span-8 glass-panel p-4 rounded-2xl border border-slate-700/60 relative">
+                        <!-- Locked Overlay for Guest Users -->
+                        <div id="videoLockOverlay" class="absolute inset-0 z-30 bg-navy-950/90 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center p-6 text-center space-y-4">
+                            <div class="w-16 h-16 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-500 flex items-center justify-center text-2xl">
+                                <i class="fa-solid fa-lock"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-white">المحتوى مغلق - مخصص للطلاب المشتركين</h3>
+                            <p class="text-xs text-slate-400 max-w-md">يرجى تسجيل الدخول برقم الهاتف المفعل، أو التواصل مع المهندس محمد جمال عوض لحجز الكورس وتفعيل حسابك.</p>
+                            <a href="https://wa.me/201070471353?text=أرغب%20في%20الاشتراك%20وتفعيل%20رقم%20هاتفي%20لمشاهدة%20الفيديوهات" target="_blank" class="px-6 py-2.5 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl text-xs transition flex items-center gap-2">
+                                <i class="fa-brands fa-whatsapp text-base"></i> تواصل مع المهندس لتفعيل رقمك
+                            </a>
+                        </div>
+
+                        <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black shadow-2xl">
+                            <iframe id="mainVideoPlayer" class="w-full h-full" src="about:blank" title="شرح مساحي" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                        <div class="mt-4">
+                            <h3 id="currentVideoTitle" class="text-lg font-bold text-white">1. دورة إعداد الداتا وتجهيز شيتات الإكسيل للـ Civil 3D</h3>
+                            <p id="currentVideoDesc" class="text-xs text-slate-400 mt-1">خطوات تنظيف النقاط، ترتيب الأعمدة، وتصدير الداتا بصيغة PNEZD.</p>
+                        </div>
+                    </div>
+
+                    <!-- Playlist -->
+                    <div class="lg:col-span-4 glass-panel p-4 rounded-2xl border border-slate-700/60 space-y-3 max-h-[480px] overflow-y-auto">
+                        <h4 class="text-sm font-bold text-white mb-2 border-b border-slate-800 pb-2"><i class="fa-solid fa-list-ul text-amber-500 ml-2"></i>دروس الدورة المفعلة</h4>
+                        
+                        <div onclick="playVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '1. دورة إعداد الداتا وتجهيز شيتات الإكسيل', 'خطوات تنظيف النقاط، ترتيب الأعمدة، وتصدير الداتا بصيغة PNEZD.')" class="playlist-item active p-3 rounded-xl glass-card cursor-pointer flex items-center gap-3 border-amber-500/40">
+                            <div class="text-amber-500 text-lg"><i class="fa-solid fa-circle-play"></i></div>
+                            <div>
+                                <h5 class="text-xs font-bold text-white">إعداد الداتا وتجهيز شيتات الإكسيل</h5>
+                                <span class="text-[10px] text-slate-400">18:45 دقيقة</span>
+                            </div>
+                        </div>
+
+                        <div onclick="playVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '2. حساب الكميات وعمل المقاطع العرضية Cross Sections', 'شرح طريقة المقارنة بين سطحين وتوليد جداول الفتايات.')" class="playlist-item p-3 rounded-xl glass-card cursor-pointer flex items-center gap-3">
+                            <div class="text-slate-500 text-lg"><i class="fa-solid fa-circle-play"></i></div>
+                            <div>
+                                <h5 class="text-xs font-bold text-white">حساب الكميات وعمل المقاطع العرضية</h5>
+                                <span class="text-[10px] text-slate-400">24:10 دقيقة</span>
+                            </div>
+                        </div>
+
+                        <div onclick="playVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '3. تجهيز شيتات المستخلصات والتسليمات المعتمدة', 'كيفية ربط كميات الكاد بشيت الإكسيل التنفيذي.')" class="playlist-item p-3 rounded-xl glass-card cursor-pointer flex items-center gap-3">
+                            <div class="text-slate-500 text-lg"><i class="fa-solid fa-circle-play"></i></div>
+                            <div>
+                                <h5 class="text-xs font-bold text-white">تجهيز المستخلصات والشيتات المعتمدة</h5>
+                                <span class="text-[10px] text-slate-400">20:15 دقيقة</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- COURSES SECTION -->
+        <section id="courses" class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-10 space-y-3">
+                <h2 class="text-2xl sm:text-3xl font-black text-white">دبلومات المكتب الفني وإعداد الداتا</h2>
+                <p class="text-slate-400 text-xs sm:text-sm">دبلومات متخصصة تؤهلك للعمل كمهندس مكتب فني مساحي محترف</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <span class="px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full text-xs font-bold">إعداد الداتا والمستخلصات</span>
+                        <h3 class="text-lg font-bold text-white mt-4 mb-2">دبلومة مهندس المكتب الفني المساحي</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed mb-4">تعلم حساب الكميات، إعداد الشيتات التنفيذية، مراجعة لوحات الكاد، وتجهيز ملفات المستخلصات للشركات والمقاولين.</p>
+                    </div>
+                    <div class="border-t border-slate-800 pt-4 flex items-center justify-between">
+                        <span class="text-sm font-bold text-amber-500">تواصل للحجز</span>
+                        <a href="https://wa.me/201070471353?text=أرغب%20في%20الحجز%20في%20دبلومة%20المكتب%20الفني" target="_blank" class="px-4 py-2 bg-navy-700 hover:bg-amber-500 hover:text-navy-950 text-white font-bold rounded-xl text-xs transition">
+                            حجز الدورة
+                        </a>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <span class="px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-xs font-bold">معالجة الداتا والمساحة</span>
+                        <h3 class="text-lg font-bold text-white mt-4 mb-2">احتراف Civil 3D وحساب الكميات</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed mb-4">إنشاء الأسطح النقطية، المقاطع الطولية والكروس سكشن (Cross Sections)، وحساب فتايات الحفر والردم بدقة عالية.</p>
+                    </div>
+                    <div class="border-t border-slate-800 pt-4 flex items-center justify-between">
+                        <span class="text-sm font-bold text-amber-500">تواصل للحجز</span>
+                        <a href="https://wa.me/201070471353?text=أرغب%20في%20الحجز%20في%20دورة%20سيفيل%20ثري%20دي" target="_blank" class="px-4 py-2 bg-navy-700 hover:bg-amber-500 hover:text-navy-950 text-white font-bold rounded-xl text-xs transition">
+                            حجز الدورة
+                        </a>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <span class="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-xs font-bold">GIS وتحليل البيانات</span>
+                        <h3 class="text-lg font-bold text-white mt-4 mb-2">دورة ArcGIS Pro وربطه بالداتا الهندسي</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed mb-4">ربط جداول البيانات المساحية بقواعد البيانات الجغرافية، التحليل المكاني، وإخراج خرائط المتابعة والتنفيذ.</p>
+                    </div>
+                    <div class="border-t border-slate-800 pt-4 flex items-center justify-between">
+                        <span class="text-sm font-bold text-amber-500">تواصل للحجز</span>
+                        <a href="https://wa.me/201070471353?text=أرغب%20في%20الحجز%20في%20دورة%20الـGIS%20والداتا" target="_blank" class="px-4 py-2 bg-navy-700 hover:bg-amber-500 hover:text-navy-950 text-white font-bold rounded-xl text-xs transition">
+                            حجز الدورة
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FILES SECTION -->
+        <section id="files" class="py-16 bg-navy-900/40 border-t border-slate-800">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-black text-white">مركز الشيتات المجهزة والداتا</h2>
+                    <p class="text-slate-400 text-xs mt-1">حمل مجاناً شيتات إكسيل المكتب الفني، معالجة النقاط، وتجهيز المستخلصات</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="glass-panel p-4 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-file-excel"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">شيت إكسيل المستخلصات وحساب الكميات</h4>
+                                <p class="text-[10px] text-slate-400">معادلات جاهزة لحساب فتايات الحفر والردم</p>
+                            </div>
+                        </div>
+                        <button onclick="downloadFile('شيت المستخلصات')" class="p-2 text-slate-400 hover:text-amber-500 transition">
+                            <i class="fa-solid fa-download text-base"></i>
+                        </button>
+                    </div>
+
+                    <div class="glass-panel p-4 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-file-code"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">ملف لسبات (LISPs) أوتوكاد للمكتب الفني</h4>
+                                <p class="text-[10px] text-slate-400">مجموعة لسبات تسريع استخراج الإحداثيات والكميات</p>
+                            </div>
+                        </div>
+                        <button onclick="downloadFile('ملف اللسبات')" class="p-2 text-slate-400 hover:text-amber-500 transition">
+                            <i class="fa-solid fa-download text-base"></i>
+                        </button>
+                    </div>
+
+                    <div class="glass-panel p-4 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-database"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">نموذج شيت تحويل وترتيب الداتا (CSV)</h4>
+                                <p class="text-[10px] text-slate-400">تنسيق وتجهيز النقاط للرفع على Civil 3D</p>
+                            </div>
+                        </div>
+                        <button onclick="downloadFile('شيت الداتا')" class="p-2 text-slate-400 hover:text-amber-500 transition">
+                            <i class="fa-solid fa-download text-base"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABOUT SECTION -->
+        <section id="about" class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="glass-panel p-8 sm:p-12 rounded-3xl border border-slate-700/60">
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <div class="space-y-4">
+                        <h2 class="text-2xl font-black text-white">المهندس / محمد جمال عوض</h2>
+                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                            خبرة 6 سنوات ممتدة في إدارة ومعالجة الداتا المساحية، والمكتب الفني للمشروعات الهندسية. هدفنا إعداد مهندس مكتب فني قادر على التعامل مع الداتا باحترافية وتسليم الأعمال والمستخلصات بدون أخطاء.
+                        </p>
+                        <div class="pt-2 space-y-2 text-xs text-slate-300">
+                            <p class="flex items-center gap-2"><i class="fa-solid fa-phone text-amber-500"></i> الهاتف: <span dir="ltr">01070471353</span></p>
+                            <p class="flex items-center gap-2"><i class="fa-brands fa-whatsapp text-green-400"></i> الواتساب: <span dir="ltr">01070471353</span></p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-center justify-center gap-4 bg-navy-800/80 p-6 rounded-2xl border border-slate-700 text-center">
+                        <h3 class="text-base font-bold text-white">تواصل مباشر للحجز والاستفسارات</h3>
+                        <a href="https://wa.me/201070471353" target="_blank" class="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-2">
+                            <i class="fa-brands fa-whatsapp text-lg"></i>
+                            <span>مراسلة عبر الواتساب</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500 mt-auto">
+            منصة المهندس محمد جمال عوض للمكتب الفني المساحي والداتا © 2026. جميع الحقوق محفوظة.
+        </footer>
+    </div>
+
+    <!-- FIREBASE INITIALIZATION & LOGIC -->
+    <script>
+        // FIREBASE CONFIGURATION
+        const firebaseConfig = {
+            apiKey: "AIzaSyBO34EZgVpZquo1TWF52r47WujWZbqukFU",
+            authDomain: "mgpro-2f83b.firebaseapp.com",
+            databaseURL: "https://mgpro-2f83b-default-rtdb.firebaseio.com",
+            projectId: "mgpro-2f83b",
+            storageBucket: "mgpro-2f83b.firebasestorage.app",
+            messagingSenderId: "964974315895",
+            appId: "1:964974315895:web:be64f714bab53dd6437972",
+            measurementId: "G-5H1EQDFBRS"
+        };
+
+        // Initialize Firebase & Database
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let isGuest = false;
+        let isSubscriber = false;
+
+        function switchAuthTab(tab) {
+            if(tab === 'login') {
+                document.getElementById('loginForm').classList.remove('hidden');
+                document.getElementById('registerForm').classList.add('hidden');
+                document.getElementById('tabLoginBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg text-amber-500 bg-navy-800 transition';
+                document.getElementById('tabRegisterBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
+            } else {
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('registerForm').classList.remove('hidden');
+                document.getElementById('tabRegisterBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg text-amber-500 bg-navy-800 transition';
+                document.getElementById('tabLoginBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
+            }
+        }
+
+        function handleAuth(e, type) {
+            e.preventDefault();
+            if (type === 'login') {
+                const phone = document.getElementById('loginPhone').value.trim();
+                const btn = document.getElementById('loginBtnSubmit');
+                btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> جاري التحقق...';
+
+                // صاحب المنصة دائم التفعيل
+                if (phone === '01070471353') {
+                    activateUserSession('المهندس محمد جمال عوض (صاحب المنصة)');
+                    return;
+                }
+
+                // التحقق من قاعدة بيانات الفايربيس للطلاب
+                db.ref('students/' + phone).once('value').then((snapshot) => {
+                    const studentData = snapshot.val();
+                    if (studentData && studentData.status === 'active') {
+                        activateUserSession(studentData.name || phone);
+                    } else if (studentData && studentData.status === 'pending') {
+                        alert('حسابك قيد التفعيل. يرجى إتمام الحجز مع المهندس محمد ليتم فتح المنصة لك فوراً.');
+                        btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> دخول المنصة';
+                    } else {
+                        // إضافة طالب جديد بحالة معلقة ليظهر في الأدمن
+                        db.ref('students/' + phone).set({
+                            phone: phone,
+                            name: 'طالب جديد',
+                            status: 'pending',
+                            createdAt: new Date().toISOString()
+                        });
+                        alert('تم تسجيل طلبك! تواصل مع المهندس عبر الواتساب لتفعيل حسابك على هذا الرقم.');
+                        btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> دخول المنصة';
+                    }
+                }).catch((err) => {
+                    console.error(err);
+                    alert('حدث خطأ في الاتصال بالخادم. حاول مجدداً.');
+                    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> دخول المنصة';
+                });
+
+            } else if (type === 'register') {
+                const name = document.getElementById('regName').value;
+                const phone = document.getElementById('regPhone').value.trim();
+
+                // حفظ الطلب في Firebase
+                db.ref('students/' + phone).set({
+                    phone: phone,
+                    name: name,
+                    status: 'pending',
+                    createdAt: new Date().toISOString()
+                });
+
+                const waUrl = `https://wa.me/201070471353?text=مرحباً%20مهندس%20محمد،%20أنا%20الطالب%20${encodeURIComponent(name)}%20ورقمي%20هو%20${encodeURIComponent(phone)}%D8%8C%20أرغب%20في%20تفعيل%20حسابي%20على%20منصة%20المكتب%20الفني.`;
+                window.open(waUrl, '_blank');
+            }
+        }
+
+        function activateUserSession(displayName) {
+            isSubscriber = true;
+            isGuest = false;
+            document.getElementById('authModal').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('userNameDisplay').innerText = 'مشترك مفعل (' + displayName + ')';
+            document.getElementById('userBadge').classList.remove('hidden');
+            document.getElementById('videoLockOverlay').classList.add('hidden');
+            playVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '1. دورة إعداد الداتا وتجهيز شيتات الإكسيل', 'خطوات تنظيف النقاط، ترتيب الأعمدة، وتصدير الداتا بصيغة PNEZD.');
+        }
+
+        function continueAsGuest() {
+            isGuest = true;
+            isSubscriber = false;
+            document.getElementById('authModal').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('userNameDisplay').innerText = 'وضع الزائر';
+            document.getElementById('userBadge').classList.remove('hidden');
+            document.getElementById('videoLockOverlay').classList.remove('hidden');
+        }
+
+        function playVideo(url, title, desc) {
+            if (!isSubscriber) {
+                alert('عذراً، مشاهدة هذا الدرس متوفرة فقط للطلاب المشتركين المفعّلة أرقامهم.');
                 return;
             }
-
-            db.ref('students/' + phone).once('value').then((snapshot) => {
-                const studentData = snapshot.val();
-                if (studentData && studentData.status === 'active') {
-                    activateUserSession(studentData.name || phone);
-                } else if (studentData && studentData.status === 'pending') {
-                    alert('حسابك قيد التفعيل. يرجى إتمام الحجز مع المهندس محمد ليتم فتح المنصة لك فوراً.');
-                    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> دخول المنصة';
-                } else {
-                    db.ref('students/' + phone).set({
-                        phone: phone,
-                        name: 'طالب جديد',
-                        status: 'pending',
-                        createdAt: new Date().toISOString()
-                    });
-                    alert('تم تسجيل طلبك! تواصل مع المهندس عبر الواتساب لتفعيل حسابك على هذا الرقم.');
-                    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> دخول المنصة';
-                }
-            }).catch((err) => {
-                console.error(err);
-                alert('حدث خطأ في الاتصال بالخادم. حاول مجدداً.');
-                btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> دخول المنصة';
-            });
-
-        } else if (type === 'register') {
-            const name = document.getElementById('regName').value;
-            const phone = document.getElementById('regPhone').value.trim();
-
-            db.ref('students/' + phone).set({
-                phone: phone,
-                name: name,
-                status: 'pending',
-                createdAt: new Date().toISOString()
-            });
-
-            const waUrl = `https://wa.me/201070471353?text=مرحباً%20مهندس%20محمد،%20أنا%20الطالب%20${encodeURIComponent(name)}%20ورقمي%20هو%20${encodeURIComponent(phone)}%D8%8C%20أرغب%20في%20تفعيل%20حسابي%20على%20منصة%20المكتب%20الفني.`;
-            window.open(waUrl, '_blank');
+            document.getElementById('mainVideoPlayer').src = url;
+            document.getElementById('currentVideoTitle').innerText = title;
+            document.getElementById('currentVideoDesc').innerText = desc;
         }
-    }
 
-    function activateUserSession(displayName) {
-        isSubscriber = true;
-        isGuest = false;
-        document.getElementById('authModal').classList.add('hidden');
-        document.getElementById('mainApp').classList.remove('hidden');
-        document.getElementById('userNameDisplay').innerText = 'مشترك مفعل (' + displayName + ')';
-        document.getElementById('userBadge').classList.remove('hidden');
-        document.getElementById('videoLockOverlay').classList.add('hidden');
-        playVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '1. دورة إعداد الداتا وتجهيز شيتات الإكسيل', 'خطوات تنظيف النقاط، ترتيب الأعمدة، وتصدير الداتا بصيغة PNEZD.');
-    }
-
-    function continueAsGuest() {
-        isGuest = true;
-        isSubscriber = false;
-        document.getElementById('authModal').classList.add('hidden');
-        document.getElementById('mainApp').classList.remove('hidden');
-        document.getElementById('userNameDisplay').innerText = 'وضع الزائر';
-        document.getElementById('userBadge').classList.remove('hidden');
-        document.getElementById('videoLockOverlay').classList.remove('hidden');
-    }
-
-    function playVideo(url, title, desc) {
-        if (!isSubscriber) {
-            alert('عذراً، مشاهدة هذا الدرس متوفرة فقط للطلاب المشتركين المفعّلة أرقامهم.');
-            return;
+        function downloadFile(fileName) {
+            if(isGuest) {
+                alert('تنبيه: أنت تتصفح بوضع الزائر. يرجى تسجيل الدخول برقمك المفعل مجاناً لتحميل ملفات وشيتات المكتب الفني.');
+            } else {
+                alert('تم بدء تحميل: ' + fileName);
+            }
         }
-        document.getElementById('mainVideoPlayer').src = url;
-        document.getElementById('currentVideoTitle').innerText = title;
-        document.getElementById('currentVideoDesc').innerText = desc;
-    }
-
-    function downloadFile(fileName) {
-        if(isGuest) {
-            alert('تنبيه: أنت تتصفح بوضع الزائر. يرجى تسجيل الدخول برقمك المفعل مجاناً لتحميل ملفات وشيتات المكتب الفني.');
-        } else {
-            alert('تم بدء تحميل: ' + fileName);
-        }
-    }
-</script>
+    </script>
+</body>
+</html>
