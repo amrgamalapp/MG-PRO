@@ -11,7 +11,7 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
 
-    <!-- Firebase App & Realtime Database SDK -->
+    <!-- Firebase SDK (Compat Version) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
@@ -115,7 +115,7 @@
                 <form onsubmit="addManualStudent(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <input type="text" id="manualName" placeholder="اسم الطالب" required class="bg-navy-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs">
                     <input type="tel" id="manualPhone" placeholder="رقم الهاتف (010XXXXXXXX)" required class="bg-navy-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs">
-                    <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-navy-900 font-bold py-2 rounded-xl text-xs">
+                    <button type="submit" id="addBtn" class="bg-amber-500 hover:bg-amber-600 text-navy-900 font-bold py-2 rounded-xl text-xs">
                         تفعيل وإضافة الرقم فوراً
                     </button>
                 </form>
@@ -125,7 +125,7 @@
             <div class="glass-panel p-6 rounded-2xl">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-users text-amber-500 ml-2"></i>قائمة الطلاب المسجلين</h3>
-                    <span class="text-xs text-green-400 font-semibold"><i class="fa-solid fa-circle text-[8px] animate-pulse"></i> متصل بـ Firebase</span>
+                    <span id="connStatus" class="text-xs text-amber-400 font-semibold"><i class="fa-solid fa-spinner animate-spin"></i> جاري الاتصال بالـ Firebase...</span>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -160,11 +160,14 @@
             projectId: "mgpro-2f83b",
             storageBucket: "mgpro-2f83b.firebasestorage.app",
             messagingSenderId: "964974315895",
-            appId: "1:964974315895:web:be0ccc00b4cc12c3437972",
-            measurementId: "G-P7FDTGQZ4Y"
+            appId: "1:964974315895:web:be64f714bab53dd6437972",
+            measurementId: "G-5H1EQDFBRS"
         };
 
-        firebase.initializeApp(firebaseConfig);
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const db = firebase.database();
 
         function handleLogin(e) {
@@ -186,13 +189,16 @@
         }
 
         function loadRealtimeStudents() {
+            const statusLabel = document.getElementById('connStatus');
+            
             db.ref('students').on('value', (snapshot) => {
+                statusLabel.innerHTML = '<i class="fa-solid fa-circle text-green-400 text-[8px] animate-pulse"></i> متصل بـ Firebase';
                 const tbody = document.getElementById('studentsTableBody');
                 tbody.innerHTML = '';
                 const data = snapshot.val();
 
                 if (!data) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">لا يوجد طلبات مسجلة حالياً.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">لا يوجد طلاب أو طلبات مسجلة حالياً. قم بإضافة أول طالب بالأعلى.</td></tr>';
                     return;
                 }
 
@@ -223,19 +229,26 @@
                         </tr>
                     `;
                 });
+            }, (error) => {
+                console.error(error);
+                statusLabel.innerHTML = '<span class="text-red-400"><i class="fa-solid fa-triangle-exclamation"></i> خطأ في الاتصال بالـ Realtime Database</span>';
+                alert('خطأ فايربيس: ' + error.message);
             });
         }
 
         function toggleStudentStatus(phone, newStatus) {
             db.ref('students/' + phone).update({ status: newStatus }).then(() => {
-                alert(newStatus === 'active' ? 'تم تفعيل حساب الطالب بنجاح!' : 'تم تغيير حالة الطالب لـ معلق.');
-            });
+                alert(newStatus === 'active' ? 'تم تفعيل حساب الطالب بنجاح!' : 'تم تغيير حالة الطالب إلى معلق.');
+            }).catch(err => alert('خطأ أثناء التعديل: ' + err.message));
         }
 
         function addManualStudent(e) {
             e.preventDefault();
             const name = document.getElementById('manualName').value.trim();
             const phone = document.getElementById('manualPhone').value.trim();
+            const addBtn = document.getElementById('addBtn');
+
+            addBtn.innerText = 'جاري الإضافة...';
 
             db.ref('students/' + phone).set({
                 phone: phone,
@@ -246,6 +259,11 @@
                 alert('تم إضافة وتفعيل الطالب بنجاح!');
                 document.getElementById('manualName').value = '';
                 document.getElementById('manualPhone').value = '';
+                addBtn.innerText = 'تفعيل وإضافة الرقم فوراً';
+            }).catch((err) => {
+                console.error(err);
+                alert('فشل الإضافة: ' + err.message + '\nتأكد من تطبيق Rules كـ true داخل Firebase Console.');
+                addBtn.innerText = 'تفعيل وإضافة الرقم فوراً';
             });
         }
     </script>
